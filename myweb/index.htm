@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Char Dham Yatra Itinerary Map</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        body {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        header {
+            background-color: #FF5722;
+            color: white;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 100;
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        
+        nav ul {
+            display: flex;
+            list-style: none;
+        }
+        
+        nav ul li {
+            margin-left: 1.5rem;
+        }
+        
+        nav ul li a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+        
+        nav ul li a:hover {
+            color: #f1f1f1;
+        }
+        
+        .map-container {
+            flex: 1;
+            position: relative;
+            min-height: 400px;
+        }
+        
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .map-error {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #f5f5f5;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            text-align: center;
+            z-index: 5;
+        }
+        
+        .map-error h3 {
+            color: #FF5722;
+            margin-bottom: 10px;
+        }
+        
+        .search-bar {
+            position: absolute;
+            top: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            max-width: 500px;
+            z-index: 10;
+        }
+        
+        .search-bar input {
+            width: 100%;
+            padding: 0.8rem;
+            border: none;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            font-size: 1rem;
+        }
+        
+        .controls {
+            position: absolute;
+            bottom: 2rem;
+            right: 2rem;
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+        }
+        
+        .control-button {
+            background-color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            margin-bottom: 0.5rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2rem;
+            transition: background-color 0.3s;
+        }
+        
+        .control-button:hover {
+            background-color: #f1f1f1;
+        }
+        
+        .itinerary-panel {
+            background: white;
+            margin: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            max-width: 300px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .itinerary-panel h3 {
+            color: #FF5722;
+            text-align: center;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+        
+        .itinerary-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .itinerary-item {
+            display: flex;
+            align-items: flex-start;
+            padding: 5px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .itinerary-day {
+            background: #FF5722;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 12px;
+            margin-right: 10px;
+            flex-shrink: 0;
+        }
+        
+        .itinerary-content {
+            flex: 1;
+        }
+        
+        .itinerary-title {
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 2px;
+        }
+        
+        .itinerary-info {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .static-itinerary {
+            display: none;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        
+        .static-itinerary h3 {
+            color: #FF5722;
+            margin-bottom: 15px;
+        }
+        
+        .static-itinerary-list {
+            list-style-type: none;
+        }
+        
+        .static-itinerary-list li {
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        footer {
+            background-color: #333;
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            z-index: 100;
+        }
+
+        /* Loading spinner */
+        .loader {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #FF5722;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            z-index: 4;
+        }
+        
+        @keyframes spin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                padding: 0.8rem 0.5rem;
+            }
+            
+            nav ul {
+                margin-top: 10px;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+            
+            nav ul li {
+                margin: 5px 10px;
+            }
+            
+            .itinerary-panel {
+                max-width: 100%;
+                margin: 5px;
+            }
+            
+            .search-bar {
+                width: 90%;
+                top: 0.5rem;
+            }
+            
+            .controls {
+                bottom: 1rem;
+                right: 1rem;
+            }
+            
+            .control-button {
+                width: 36px;
+                height: 36px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">Char Dham Yatra 2025</div>
+        <nav>
+            <ul>
+                <li><a href="#">Home</a></li>
+                <li><a href="#">Itinerary</a></li>
+                <li><a href="#">Destinations</a></li>
+                <li><a href="#">Tips</a></li>
+                <li><a href="#">Photos</a></li>
+            </ul>
+        </nav>
+    </header>
+    
+    <div class="map-container">
+        <div class="loader" id="map-loader"></div>
+        
+        <div class="map-error" id="map-error">
+            <h3>Map Could Not Be Loaded</h3>
+            <p>We're having trouble loading the map. Please check your internet connection and try again.</p>
+            <button onclick="window.location.reload()" style="margin-top: 20px; padding: 8px 16px; background-color: #FF5722; color: white; border: none; border-radius: 4px; cursor: pointer;">Reload Page</button>
+        </div>
+        
+        <div class="search-bar">
+            <input type="text" placeholder="Search for places..." id="search-input">
+        </div>
+        
+        <div id="map"></div>
+        
+        <div class="controls">
+            <button class="control-button" id="zoom-in">+</button>
+            <button class="control-button" id="zoom-out">-</button>
+            <button class="control-button" id="locate-me">📍</button>
+        </div>
+    </div>
+    
+    <!-- Fallback static content for when JavaScript is disabled or map fails to load -->
+    <div class="static-itinerary" id="static-itinerary">
+        <h3>Char Dham Yatra Itinerary (May 15-24, 2025)</h3>
+        <ul class="static-itinerary-list">
+            <li><strong>Day 1 (15/5/2025):</strong> Delhi - Departure at 6 PM towards Haridwar</li>
+            <li><strong>Day 2 (16/5/2025):</strong> Haridwar - Arrive in morning, leave at 5 AM to Janki Chatti</li>
+            <li><strong>Day 2-3 (16-17/5/2025):</strong> Janki Chatti - Night stay, base for Yamunotri trek</li>
+            <li><strong>Day 3 (17/5/2025):</strong> Yamunotri - Morning darshan and return to Janki Chatti for night stay</li>
+            <li><strong>Day 4 (18/5/2025):</strong> Gangotri - Travel from Janki Chatti to Gangotri, night stay</li>
+            <li><strong>Day 5 (19/5/2025):</strong> Sonprayag - Travel from Gangotri to Sonprayag, night stay</li>
+            <li><strong>Day 6-7 (20-21/5/2025):</strong> Kedarnath - Kedarnath darshan and night stay</li>
+            <li><strong>Day 7 (21/5/2025):</strong> Sonprayag - Return from Kedarnath, night stay</li>
+            <li><strong>Day 8 (22/5/2025):</strong> Badrinath - Travel from Sonprayag to Badrinath, night stay</li>
+            <li><strong>Day 9 (23/5/2025):</strong> Mana Village - Morning darshan at Badrinath, visit Mana Village, return to Haridwar</li>
+            <li><strong>Day 10 (24/5/2025):</strong> Delhi - Morning return to Delhi</li>
+        </ul>
+    </div>
+    
+    <footer>
+        &copy; 2025 Char Dham Yatra Planner. May Lord Shiva and Vishnu bless your journey. 🙏
+    </footer>
+
+    <script>
+        // Show static itinerary as fallback if JavaScript is disabled
+        document.getElementById('static-itinerary').style.display = 'none';
+        
+        // Global variable to track if map loaded successfully
+        let mapLoaded = false;
+        
+        // Function to handle Google Maps API loading error
+        function handleMapError() {
+            document.getElementById('map-loader').style.display = 'none';
+            document.getElementById('map-error').style.display = 'flex';
+            document.getElementById('static-itinerary').style.display = 'block';
+            console.error('Google Maps failed to load');
+        }
+        
+        // Set a timeout to check if the map has loaded
+        setTimeout(function() {
+            if (!mapLoaded) {
+                handleMapError();
+            }
+        }, 10000); // 10 seconds timeout
+        
+        // Initialize the map
+        function initMap() {
+            try {
+                // Hide loader when map starts initializing
+                document.getElementById('map-loader').style.display = 'none';
+                
+                // Center the map on Uttarakhand region where most destinations are
+                const centerPoint = { lat: 30.0668, lng: 79.0193 };
+                
+                // Create map
+                const map = new google.maps.Map(document.getElementById("map"), {
+                    center: centerPoint,
+                    zoom: 8,
+                    mapTypeControl: true,
+                    streetViewControl: true,
+                    fullscreenControl: true,
+                });
+                
+                // Itinerary data with coordinates and details
+                const itinerary = [
+                    {
+                        position: { lat: 28.7041, lng: 77.1025 },
+                        title: "Day 1: Delhi (15/5/2025)",
+                        info: "Start journey at 6 PM towards Haridwar"
+                    },
+                    {
+                        position: { lat: 29.9457, lng: 78.1642 },
+                        title: "Day 2: Haridwar (16/5/2025)",
+                        info: "Arrive in morning, leave at 5 AM to Janki Chatti"
+                    },
+                    {
+                        position: { lat: 30.9557, lng: 78.4442 },
+                        title: "Day 2-3: Janki Chatti (16-17/5/2025)",
+                        info: "Night stay, base for Yamunotri trek"
+                    },
+                    {
+                        position: { lat: 31.0145, lng: 78.4615 },
+                        title: "Day 3: Yamunotri (17/5/2025)",
+                        info: "Morning darshan and return to Janki Chatti for night stay"
+                    },
+                    {
+                        position: { lat: 30.9950, lng: 78.9398 },
+                        title: "Day 4: Gangotri (18/5/2025)",
+                        info: "Travel from Janki Chatti to Gangotri, night stay"
+                    },
+                    {
+                        position: { lat: 30.6246, lng: 79.0700 },
+                        title: "Day 5: Sonprayag (19/5/2025)",
+                        info: "Travel from Gangotri to Sonprayag, night stay"
+                    },
+                    {
+                        position: { lat: 30.7346, lng: 79.0669 },
+                        title: "Day 6-7: Kedarnath (20-21/5/2025)",
+                        info: "Kedarnath darshan and night stay, return to Sonprayag on 21st"
+                    },
+                    {
+                        position: { lat: 30.6246, lng: 79.0700 },
+                        title: "Day 7: Sonprayag (21/5/2025)",
+                        info: "Return from Kedarnath, night stay"
+                    },
+                    {
+                        position: { lat: 30.7433, lng: 79.4937 },
+                        title: "Day 8: Badrinath (22/5/2025)",
+                        info: "Travel from Sonprayag to Badrinath, night stay"
+                    },
+                    {
+                        position: { lat: 30.7633, lng: 79.5000 },
+                        title: "Day 9: Mana Village (23/5/2025)",
+                        info: "Morning darshan at Badrinath, visit Mana Village, return to Haridwar"
+                    },
+                    {
+                        position: { lat: 29.9457, lng: 78.1642 },
+                        title: "Day 9: Haridwar (23/5/2025)",
+                        info: "Return to Haridwar from Badrinath"
+                    },
+                    {
+                        position: { lat: 28.7041, lng: 77.1025 },
+                        title: "Day 10: Delhi (24/5/2025)",
+                        info: "Morning return to Delhi"
+                    }
+                ];
+                
+                // Create path between destinations
+                const path = new google.maps.Polyline({
+                    path: itinerary.map(stop => stop.position),
+                    geodesic: true,
+                    strokeColor: '#FF0000',
+                    strokeOpacity: 1.0,
+                    strokeWeight: 2
+                });
+                
+                path.setMap(map);
+                
+                // Create info windows for each marker
+                const infowindow = new google.maps.InfoWindow();
+                
+                // Add markers for each destination
+                itinerary.forEach((stop, index) => {
+                    const marker = new google.maps.Marker({
+                        position: stop.position,
+                        map: map,
+                        title: stop.title,
+                        label: (index + 1).toString(),
+                        animation: google.maps.Animation.DROP
+                    });
+                    
+                    // Add click listener to show info
+                    marker.addListener('click', function() {
+                        infowindow.setContent(
+                            '<div style="padding: 8px; max-width: 200px;">' +
+                            '<h3 style="margin-bottom: 5px; color: #FF5722;">' + stop.title + '</h3>' +
+                            '<p style="font-size: 14px;">' + stop.info + '</p>' +
+                            '</div>'
+                        );
+                        infowindow.open(map, marker);
+                    });
+                });
+                
+                // Fit the map bounds to show all markers
+                const bounds = new google.maps.LatLngBounds();
+                itinerary.forEach(stop => {
+                    bounds.extend(stop.position);
+                });
+                map.fitBounds(bounds);
+                
+                // Add itinerary panel
+                const itineraryPanel = document.createElement('div');
+                itineraryPanel.className = 'itinerary-panel';
+                itineraryPanel.innerHTML = `
+                    <h3>Char Dham Yatra Itinerary</h3>
+                    <div class="itinerary-list">
+                        ${itinerary.map((stop, index) => `
+                            <div class="itinerary-item">
+                                <div class="itinerary-day">${index + 1}</div>
+                                <div class="itinerary-content">
+                                    <div class="itinerary-title">${stop.title}</div>
+                                    <div class="itinerary-info">${stop.info}</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                map.controls[google.maps.ControlPosition.LEFT_TOP].push(itineraryPanel);
+                
+                // Search functionality
+                const searchInput = document.getElementById('search-input');
+                if (searchInput && google.maps.places) {
+                    const searchBox = new google.maps.places.SearchBox(searchInput);
+                    
+                    map.addListener('bounds_changed', function() {
+                        searchBox.setBounds(map.getBounds());
+                    });
+                    
+                    let searchMarkers = [];
+                    
+                    searchBox.addListener('places_changed', function() {
+                        const places = searchBox.getPlaces();
+                        
+                        if (places.length === 0) {
+                            return;
+                        }
+                        
+                        // Clear existing search markers
+                        searchMarkers.forEach(marker => marker.setMap(null));
+                        searchMarkers = [];
+                        
+                        const bounds = new google.maps.LatLngBounds();
+                        
+                        places.forEach(place => {
+                            if (!place.geometry || !place.geometry.location) {
+                                console.log("Returned place contains no geometry");
+                                return;
+                            }
+                            
+                            // Create a marker for each place
+                            searchMarkers.push(
+                                new google.maps.Marker({
+                                    map: map,
+                                    title: place.name,
+                                    position: place.geometry.location,
+                                    icon: {
+                                        path: google.maps.SymbolPath.CIRCLE,
+                                        scale: 10,
+                                        fillColor: "#4285F4",
+                                        fillOpacity: 1,
+                                        strokeColor: "white",
+                                        strokeWeight: 2
+                                    }
+                                })
+                            );
+                            
+                            if (place.geometry.viewport) {
+                                bounds.union(place.geometry.viewport);
+                            } else {
+                                bounds.extend(place.geometry.location);
+                            }
+                        });
+                        
+                        map.fitBounds(bounds);
+                    });
+                }
+                
+                // Zoom controls
+                const zoomIn = document.getElementById('zoom-in');
+                if (zoomIn) {
+                    zoomIn.addEventListener('click', function() {
+                        map.setZoom(map.getZoom() + 1);
+                    });
+                }
+                
+                const zoomOut = document.getElementById('zoom-out');
+                if (zoomOut) {
+                    zoomOut.addEventListener('click', function() {
+                        map.setZoom(map.getZoom() - 1);
+                    });
+                }
+                
+                // Geolocation
+                const locateMe = document.getElementById('locate-me');
+                if (locateMe) {
+                    locateMe.addEventListener('click', function() {
+                        if (navigator.geolocation) {
+                            navigator.geolocation.getCurrentPosition(
+                                function(position) {
+                                    const userLocation = {
+                                        lat: position.coords.latitude,
+                                        lng: position.coords.longitude
+                                    };
+                                    
+                                    // Add marker for user location
+                                    new google.maps.Marker({
+                                        position: userLocation,
+                                        map: map,
+                                        title: "Your Location",
+                                        icon: {
+                                            path: google.maps.SymbolPath.CIRCLE,
+                                            scale: 10,
+                                            fillColor: "#4285F4",
+                                            fillOpacity: 1,
+                                            strokeColor: "white",
+                                            strokeWeight: 2
+                                        }
+                                    });
+                                    
+                                    map.setCenter(userLocation);
+                                    map.setZoom(15);
+                                },
+                                function() {
+                                    alert("Unable to get your location. Please check your browser permissions.");
+                                }
+                            );
+                        } else {
+                            alert("Geolocation is not supported by your browser.");
+                        }
+                    });
+                }
+                
+                // Set flag that map loaded successfully
+                mapLoaded = true;
+                
+            } catch (error) {
+                console.error('Error initializing map:', error);
+                handleMapError();
+            }
+        }
+        
+        // Handle Google Maps script loading error
+        function gm_authFailure() {
+            handleMapError();
+        }
+    </script>
+    
+    <!-- NoScript fallback for users without JavaScript -->
+    <noscript>
+        <style>
+            .map-container { display: none; }
+            .static-itinerary { display: block !important; }
+        </style>
+    </noscript>
+    
+    <!-- Load Google Maps JavaScript API with Places library -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB41DRUbKWJHPxaFjMAwdrzWzbVKartNGg&libraries=places&callback=initMap" async defer onerror="handleMapError()"></script>
+</body>
+</html>
